@@ -1,74 +1,70 @@
+
+//#region Query
+
 /** @type {HTMLButtonElement} */
 const opcA = document.querySelector('#opc-a');
 /** @type {HTMLButtonElement} */
 const opcB = document.querySelector('#opc-b');
 /** @type {HTMLDivElement} */
 const result = document.querySelector('#result');
-result.hidden = true;
+
+//#endregion
 
 class Item {
-	constructor(name, value, power, background, color) {
+	constructor(name, value, background, color) {
 		/** @type {String} */
 		this.name = name;
 		/** @type {Number} */
 		this.value = value;
-		/** @type {Number} */
-		//max of 52 items...
-		this.power = power;
+		/** @type {Item[]} */
+		this.winFrom = [];
 		/** @type {String} */
 		this.background = background;
 		/** @type {String} */
 		this.color = color;
 	}
-
-
-
+	/** @param {Item} other */
+	AlreadyWon(other) {
+		return this.winFrom.includes(other);
+	}
 };
 
 let opcs = [];
 fetch('./opcs.json')
-.then(response => response.json())
-.then(data => {
-	opcs = data.map((element, index) => {
-		let c = RandomColor();
-		return new Item(element, 0, Math.pow(2, index), c, InvertColor(c, true));
+	.then(response => response.json())
+	.then(data => {
+		opcs = data.map(element => {
+			let c = RandomColor();
+			return new Item(element, 0, c, InvertColor(c, true));
+		});
+		Next();
 	});
-	Next();
-});
 
 //#region
-
-var done = [];
 
 /** @type {Item} */
 let a;
 /** @type {Item} */
 let b;
 
-function DoneAdd(a, b, winner) {
-	done.push({ sum: a.power + b.power, winner: winner });
-}
-
-function OnOpcClick(item, other) {
-	if (!item)
-		return;
-	item.value++;
-	DoneAdd(item, other, item);
-	Next();
-}
+let level = 0;
+let pointer = 0;
 
 opcA.onclick = () => OnOpcClick(a, b);
 opcB.onclick = () => OnOpcClick(b, a);
 
-let level = 0;
-let pointer = 0;
+/** @param {Item} winner @param {Item} looser */
+function OnOpcClick(winner, looser) {
+	if (!winner && pointer > -1)
+		return;
+	winner.value++;
+	winner.winFrom.push(looser);
+	Next();
+}
 
 function Next() {
-
-	if (pointer > -1) {
-		console.clear();
-		console.table(opcs);
-	}
+	console.clear();
+	console.table(opcs);
 
 	a = undefined;
 	b = undefined;
@@ -81,28 +77,31 @@ function Next() {
 		}
 
 		if (a && b) {
-			let d = done.find(el => el.sum === a.power + b.power);
-			if (d)
-				d.winner.value++;
+			if (a.AlreadyWon(b)) {
+				a.value++;
+				a = undefined;
+			}
+			else if (b.AlreadyWon(a)) {
+				b.value++;
+				b = undefined;
+			}
+			else
+				break;
 		}
 	}
 
-	if (a) {
-		if (b) {
-			SetOpc(opcA, a);
-			SetOpc(opcB, b);
-		}
-		else {
-			level++;
-			Next();
-			return;
-		}
+	if (a && b) {
+		SetOpc(opcA, a);
+		SetOpc(opcB, b);
 	}
-	else
-		if (!b) {
-			pointer = -1;
-			ShowResult();
-		}
+	else if ((a && !b) || (!a && b)) {
+		level++;
+		Next();
+	}
+	else {
+		pointer = -1;
+		ShowResult();
+	}
 
 }
 
