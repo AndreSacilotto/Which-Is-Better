@@ -1,0 +1,62 @@
+*{
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+}
+
+body{
+	background: lightcyan;
+}
+
+#main{	
+	position: absolute;
+	left: 0; 
+	right: 0; 
+	margin-left: auto; 
+	margin-right: auto; 
+
+	top: 25%;
+
+	width: 75%;
+	height: 50%;
+	color: white;
+	/* background-color: red; */
+
+	display: grid;
+	grid: 1fr / auto-flow 1fr;
+	gap: 10%;
+}
+
+#opc-a, #opc-b {
+	font-size: 1.6rem;
+}
+
+#opc-a:hover, #opc-b:hover {
+	box-shadow: 0px 0px 0px 2px red;
+}
+
+
+#result{
+	background-color: rgba(0, 0, 0, 0.75);
+
+	position: absolute;
+	left: 0; 
+	right: 0; 
+	top: 20%;
+	margin-left: auto; 
+	margin-right: auto; 
+
+	width: 85%;
+	height: 60%;
+
+	color: whitesmoke;
+	text-align: center;
+}
+
+/* #opc-a{
+	background-color: blue;
+}
+
+#opc-b{
+	background-color: green;
+} */
