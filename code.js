@@ -24,8 +24,12 @@ class Item {
 		this.color = color;
 	}
 	/** @param {Item} other */
-	NeverMeet(other) {
-		return !this.winFrom.includes(other) && !other.winFrom.includes(this);
+	AlreadyMeet(other) {
+		return AlreadyWon(other) || other.AlreadyWon(this);
+	}
+	/** @param {Item} other */
+	AlreadyWon(other) {
+		return this.winFrom.includes(other);
 	}
 };
 
@@ -63,25 +67,33 @@ function OnOpcClick(winner, looser) {
 	}
 }
 
-function Undefine() {
-	a = b = undefined;
-}
-
 function Next() {
 	console.clear();
 	console.table(opcs);
-	console.table(level);
+	console.log(level);
 
 	let found = FindNextPair();
 
 	if (found) {
-		SetOpc(opcA, a);
-		SetOpc(opcB, b);
+		console.log(a, b);
+		if (a.AlreadyWon(b)) {
+			a.level++;
+			Next();
+		}
+		else if(b.AlreadyWon(a))
+		{
+			b.level++;
+			Next();
+		}
+		else {
+			SetOpc(opcA, a);
+			SetOpc(opcB, b);
+		}
 	}
 	else {
 		level++;
 		if (level >= opcs.length) {
-			Undefine();
+			a = b = undefined;
 			ShowResult();
 		}
 		else
@@ -91,15 +103,17 @@ function Next() {
 }
 
 function FindNextPair() {
-	Undefine();
-
 	let currentOpcs = opcs.filter(el => el.level === level);
 
 	if (currentOpcs.length <= 1)
 		return false;
 
-	a = currentOpcs[0];
-	b = currentOpcs[1];
+	let aIdx = RandomInt(0, currentOpcs.length-1);
+	a = currentOpcs[aIdx];
+	let bIdx = RandomInt(0, currentOpcs.length-1);
+	if(aIdx === bIdx)
+		bIdx = bIdx + 1 % currentOpcs.length;
+	b = currentOpcs[bIdx];
 	return true;
 }
 
@@ -137,7 +151,7 @@ function RandomColorFromText(text) {
 	const letters = '0123456789ABCDEF';
 	let color = '#';
 	for (let i = 0; i < 6; i++) {
-		let n = text.charCodeAt(i % text.length);
+		let n = text.charCodeAt((i * i >> 2) % text.length);
 		color += letters[Math.floor(n % letters.length)];
 	}
 	return color;
