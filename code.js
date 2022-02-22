@@ -15,7 +15,7 @@ class Item {
 		/** @type {String} */
 		this.name = name;
 		/** @type {Number} */
-		this.value = value;
+		this.level = value;
 		/** @type {Item[]} */
 		this.winFrom = [];
 		/** @type {String} */
@@ -24,19 +24,21 @@ class Item {
 		this.color = color;
 	}
 	/** @param {Item} other */
-	AlreadyWon(other) {
-		return this.winFrom.includes(other);
+	NeverMeet(other) {
+		return !this.winFrom.includes(other) && !other.winFrom.includes(this);
 	}
 };
 
-let opcs = [];
+/** @type {Item[]} */
+let opcs;
 fetch('./opcs.json')
 	.then(response => response.json())
 	.then(data => {
 		opcs = data.map(element => {
-			let c = RandomColor();
-			return new Item(element, 0, c, InvertColor(c, true));
+			const color = RandomColorFromText(element);
+			return new Item(element, 0, color, InvertColor(color, true));
 		});
+		currentOpcs = opcs;
 		Next();
 	});
 
@@ -48,63 +50,60 @@ let a;
 let b;
 
 let level = 0;
-let pointer = 0;
 
 opcA.onclick = () => OnOpcClick(a, b);
 opcB.onclick = () => OnOpcClick(b, a);
 
 /** @param {Item} winner @param {Item} looser */
 function OnOpcClick(winner, looser) {
-	if (!winner && pointer > -1)
-		return;
-	winner.value++;
-	winner.winFrom.push(looser);
-	Next();
+	if (winner && looser) {
+		winner.level++;
+		winner.winFrom.push(looser);
+		Next();
+	}
+}
+
+function Undefine() {
+	a = b = undefined;
 }
 
 function Next() {
 	console.clear();
 	console.table(opcs);
+	console.table(level);
 
-	a = undefined;
-	b = undefined;
-	for (let i = 0; i < opcs.length; i++) {
-		if (opcs[i].value == level) {
-			if (!a)
-				a = opcs[i];
-			else if (!b)
-				b = opcs[i];
-		}
+	let found = FindNextPair();
 
-		if (a && b) {
-			if (a.AlreadyWon(b)) {
-				a.value++;
-				a = undefined;
-			}
-			else if (b.AlreadyWon(a)) {
-				b.value++;
-				b = undefined;
-			}
-			else
-				break;
-		}
-	}
-
-	if (a && b) {
+	if (found) {
 		SetOpc(opcA, a);
 		SetOpc(opcB, b);
 	}
-	else if ((a && !b) || (!a && b)) {
-		level++;
-		Next();
-	}
 	else {
-		pointer = -1;
-		ShowResult();
+		level++;
+		if (level >= opcs.length) {
+			Undefine();
+			ShowResult();
+		}
+		else
+			Next();
 	}
 
 }
 
+function FindNextPair() {
+	Undefine();
+
+	let currentOpcs = opcs.filter(el => el.level === level);
+
+	if (currentOpcs.length <= 1)
+		return false;
+
+	a = currentOpcs[0];
+	b = currentOpcs[1];
+	return true;
+}
+
+/** @param {HTMLElement} opc @param {Item} item */
 function SetOpc(opc, item) {
 	opc.innerHTML = item.name;
 	opc.style.backgroundColor = item.background;
@@ -112,30 +111,48 @@ function SetOpc(opc, item) {
 }
 
 function ShowResult() {
-	let final = "";
+	let str = "";
 	for (let lvl = 0; lvl < opcs.length; lvl++) {
 		for (let i = 0; i < opcs.length; i++)
-			if (opcs[i].value == lvl) {
-				final += opcs[i].name + "\<br\>";
+			if (opcs[i].level === lvl) {
+				str += opcs[i].name + "\n";
 				break;
 			}
 	}
-	result.innerHTML = final;
+	console.log(str);
+	result.innerHTML = str.replaceAll("\n", "\<br\>");
 	result.hidden = false;
 }
 
 
 //#region COLOR
 
+/** @param {Number} min @param {Number} max */
+function RandomInt(min, max) { // min and max included 
+	return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+/** @param {String} text */
+function RandomColorFromText(text) {
+	const letters = '0123456789ABCDEF';
+	let color = '#';
+	for (let i = 0; i < 6; i++) {
+		let n = text.charCodeAt(i % text.length);
+		color += letters[Math.floor(n % letters.length)];
+	}
+	return color;
+}
+
 function RandomColor() {
-	var letters = '0123456789ABCDEF';
-	var color = '#';
-	for (var i = 0; i < 6; i++)
+	const letters = '0123456789ABCDEF';
+	let color = '#';
+	for (let i = 0; i < 6; i++)
 		color += letters[Math.floor(Math.random() * 16)];
 	return color;
 }
 
-function InvertColor(hex, bw) {
+/** @param {String} hex @param {Boolean} blackWhite */
+function InvertColor(hex, blackWhite) {
 	if (hex.indexOf('#') === 0) {
 		hex = hex.slice(1);
 	}
@@ -146,10 +163,10 @@ function InvertColor(hex, bw) {
 	if (hex.length !== 6) {
 		throw new Error('Invalid HEX color.');
 	}
-	var r = parseInt(hex.slice(0, 2), 16),
+	let r = parseInt(hex.slice(0, 2), 16),
 		g = parseInt(hex.slice(2, 4), 16),
 		b = parseInt(hex.slice(4, 6), 16);
-	if (bw) {
+	if (blackWhite) {
 		// https://stackoverflow.com/a/3943023/112731
 		return (r * 0.299 + g * 0.587 + b * 0.114) > 186
 			? '#000000'
