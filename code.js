@@ -42,7 +42,6 @@ fetch('./opcs.json')
 			const color = RandomColorFromText(element);
 			return new Item(element, 0, color, InvertColor(color, true));
 		});
-		currentOpcs = opcs;
 		Next();
 	});
 
@@ -102,8 +101,9 @@ function Next() {
 
 }
 
+let currentOpcs;
 function FindNextPair() {
-	let currentOpcs = opcs.filter(el => el.level === level);
+	currentOpcs = opcs.filter(el => el.level === level);
 
 	if (currentOpcs.length <= 1)
 		return false;
@@ -112,7 +112,7 @@ function FindNextPair() {
 	a = currentOpcs[aIdx];
 	let bIdx = RandomInt(0, currentOpcs.length-1);
 	if(aIdx === bIdx)
-		bIdx = bIdx + 1 % currentOpcs.length;
+		bIdx = (bIdx + 1) % currentOpcs.length;
 	b = currentOpcs[bIdx];
 	return true;
 }
